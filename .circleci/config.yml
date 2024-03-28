@@ -47,7 +47,7 @@ custom-steps:
         export XZ_OPT="--threads=`getconf _NPROCESSORS_ONLN` -9e" # -9e. -8/9 will disable mt?
         tar Jcf ffmpeg-${FF_VERSION}-${TARGET_OS}-${COMPILER}${LIB_OPT//*-/-}${CONFIG_SUFFIX}${LTO_SUFFIX}{.tar.xz,}
         ls -lh *.xz
-        sshpass -p $SF_PW scp -o StrictHostKeyChecking=no ffmpeg-${FF_VERSION}-${TARGET_OS}*.tar.xz $SF_USER,avbuild@frs.sourceforge.net:/home/frs/project/a/av/avbuild/${TARGET_OS}
+        sshpass -p $SF_PW scp -o StrictHostKeyChecking=no ffmpeg-${FF_VERSION}-${TARGET_OS}*.tar.xz $SF_USER,zero16832@frs.sourceforge.net:/home/frs/project/ffbuild/${TARGET_OS}
 
 jobs:
   build_gcc:

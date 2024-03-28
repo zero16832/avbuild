@@ -308,5 +308,5 @@ jobs:
         for f in `ls ffmpeg-*.7z`; do
           OS=${f%%-vs*}
           OS=${OS##*${FFV}-}
-          sshpass -p $SF_PW_MAPPED scp -o StrictHostKeyChecking=no $f $SF_USER_MAPPED,avbuild@frs.sourceforge.net:/home/frs/project/a/av/avbuild/$OS
+          sshpass -p $SF_PW_MAPPED scp -o StrictHostKeyChecking=no $f $SF_USER_MAPPED,zero16832@frs.sourceforge.net:/home/frs/project/ffbuild/$OS
         done
