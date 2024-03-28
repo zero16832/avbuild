@@ -91,6 +91,7 @@ fi
 
 if [ -n "${CONFIG_SUFFIX}" ]; then
   ln -sf config{${CONFIG_SUFFIX},}.sh;
+  echo "Linked to config${CONFIG_SUFFIX}.sh"
 fi
 
 export FFSRC=$PWD/ffmpeg-${FF_VERSION}
