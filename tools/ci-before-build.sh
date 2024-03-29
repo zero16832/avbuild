@@ -87,7 +87,6 @@ elif [ -n "$FF_COMMIT" ]; then
 else
   echo "no ffmpeg src. clone"
   git clone -b ${FF_BRANCH} --depth 1 --no-tags ${FFREPO:-https://git.ffmpeg.org/ffmpeg.git} ffmpeg-${FF_VERSION}
-  echo git clone -b ${FF_BRANCH} --depth 1 --no-tags ${FFREPO:-https://git.ffmpeg.org/ffmpeg.git} ffmpeg-${FF_VERSION}
 fi
 
 if [ -n "${CONFIG_SUFFIX}" ]; then
