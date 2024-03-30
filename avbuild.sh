@@ -423,6 +423,7 @@ setup_win(){
   : ${USE_TOOLCHAIN:=$win_cc}
   probe_cc $USE_TOOLCHAIN
   enable_opt mediafoundation
+  disable_opt avdevice
   disable_opt ptx-compression # libavfilter link error (zlib used in ff_cuda_load_module but no lib dep)
   $USE_VK && EXTRA_CFLAGS+=" -I\$THIS_DIR/tools/Vulkan-Headers/include"
   $USE_VAAPI_WIN32 || disable_opt vaapi
