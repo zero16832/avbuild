@@ -1683,16 +1683,16 @@ EOF
     cp -af $FFBUILD/config.log $THIS_DIR/$INSTALL_DIR
     exit 2
   }
-  $THIS_DIR/tools/mklibffmpeg.sh $PWD $THIS_DIR/$INSTALL_DIR || exit 3
-  cd $THIS_DIR/$INSTALL_DIR
-  echo "https://github.com/wang-bin/avbuild" > README.txt
-  cp -af "$FFSRC/Changelog" .
-  [ -f "$FFSRC/RELEASE_NOTES" ] && cp -af "$FFSRC/RELEASE_NOTES" .
-  [ -f "$FFSRC/$LICENSE_FILE" ] && cp -af "$FFSRC/$LICENSE_FILE" . || touch $LICENSE_FILE
-  if [ -f bin/avutil.lib ]; then
-    mv bin/*.lib lib
-  fi
-  find lib -name "*.dylib" -type f -exec strip -u -r {} \;
+  #$THIS_DIR/tools/mklibffmpeg.sh $PWD $THIS_DIR/$INSTALL_DIR || exit 3
+  #cd $THIS_DIR/$INSTALL_DIR
+  #echo "https://github.com/wang-bin/avbuild" > README.txt
+  #cp -af "$FFSRC/Changelog" .
+  #[ -f "$FFSRC/RELEASE_NOTES" ] && cp -af "$FFSRC/RELEASE_NOTES" .
+  #[ -f "$FFSRC/$LICENSE_FILE" ] && cp -af "$FFSRC/$LICENSE_FILE" . || touch $LICENSE_FILE
+  #if [ -f bin/avutil.lib ]; then
+  #  mv bin/*.lib lib
+  #fi
+  #find lib -name "*.dylib" -type f -exec strip -u -r {} \;
 }
 
 build_all(){
