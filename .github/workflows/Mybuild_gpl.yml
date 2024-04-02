@@ -101,7 +101,7 @@ jobs:
           pkg-config
           nasm
           yasm
-          mingw-w64-x86_64-winpthreads
+          mingw64-x86_64-pthreads
     - name: Install dev packages
       shell: msys2 {0}
       run: |
