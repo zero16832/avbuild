@@ -40,14 +40,6 @@ jobs:
         ./tools/ci-before-build.sh
         wget https://sourceforge.net/projects/avbuild/files/dep/dep_gpl.7z/download -O dep_gpl.7z
         7z x -y dep_gpl.7z -otools
-    - name: Configure and Build macOS
-      if: ${{ matrix.target == 'macOS' }}
-      # Use a bash shell so we can use the same syntax for environment variable
-      # access regardless of the host operating system
-      shell: bash
-      run: |
-        export FFSRC=$PWD/ffmpeg-${FF_VERSION}
-        ./avbuild.sh ${TARGET_OS}
     - name: Configure and Build iOS arm64
       if: ${{ matrix.target == 'iOS' }}
       # Use a bash shell so we can use the same syntax for environment variable
@@ -117,7 +109,7 @@ jobs:
         set HOME=%CD%
         set FFSRC=%CD%\ffmpeg-%FF_VERSION%
         set BUILD_NOW=true
-        tools\vcbuild.bat VS2022 %TARGET_OS%10 x64
+        tools\vcbuild.bat VS2022 %TARGET_OS%10 all
     - name: Make SDK
       shell: cmd
       run: |
@@ -158,12 +150,23 @@ jobs:
         ./tools/ci-before-build.sh
         wget https://sourceforge.net/projects/avbuild/files/dep/dep_gpl.7z/download -O dep_gpl.7z
         7z x -y dep_gpl.7z -otools
-    - name: Configure and Build
+    - name: Configure and Build 32bit
+      shell: bash
+      run: |
+        export ANDROID_NDK=$ANDROID_NDK_HOME   # ndk25, api19
+        export FFSRC=$PWD/ffmpeg-${FF_VERSION}
+        export USER_OPT="--enable-wolfssl"
+        ./avbuild.sh ${TARGET_OS} "armv7 x86"
+        mv sdk-android-clang{,32}
+    - name: Configure and Build 64bit
       shell: bash
       run: |
         export ANDROID_NDK=$ANDROID_NDK_LATEST_HOME
         export FFSRC=$PWD/ffmpeg-${FF_VERSION}
-        ./avbuild.sh ${TARGET_OS} arm64
+        export USER_OPT="--enable-wolfssl"
+        ./avbuild.sh ${TARGET_OS} "arm64 x86_64"
+        rsync -auv --ignore-existing  sdk-android-clang{32/*,}
+        rm -rf sdk-android-clang32
     - name: Make SDK
       shell: bash
       run: |
