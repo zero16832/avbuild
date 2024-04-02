@@ -7,7 +7,7 @@ USER_OPT="--enable-small \
 --disable-decoders \
 --disable-demuxers \
 --disable-parsers --enable-parser=*sub*,*jp*,aac*,ac3,cook,dnxhd,flac,h26[3-4],hevc,m*,opus,rv*,vc1,vorbis,vp[8-9] \
---pkg-config=pkg-config --pkg-config-flags=--static --enable-gpl --enable-libx265 --enable-libx264 --enable-pthreads --enable-w32threads \
+--pkg-config=pkg-config --pkg-config-flags=--static --enable-gpl --enable-libx265 --enable-libx264 --enable-pthreads \
 $USER_OPT
 "
 DEC_OPT_MOBILE="--enable-decoder=*sub*,movtext,*web*,aac*,*ac3*,alac*,ape,ass,av1*,ccaption,cfhd,cook,dca,dnxhd,eac3*,exr,truehd,ff*,*yuv*,flv,flac,gif,h26[3-4]*,hevc*,hap,mp[1-3]*,prores,*peg*,mlp,mpl2,nellymoser,opus,pcm*,qtrle,*png*,tiff,rawvideo,sami,srt,ssa,v210*,vc1*,vorbis,vp[6-9]*,wm*,wrapped_avframe"
