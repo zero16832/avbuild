@@ -41,6 +41,7 @@ test -f $USER_CONFIG &&  . $USER_CONFIG
 : ${DEBUG_OPT:="--disable-debug"}
 : ${FORCE_LTO:=false}
 : ${FFSRC:=$PWD/FFmpeg}
+: ${LITE_BUILD:=false}
 [[ "$LIB_OPT" == *"--disable-static"* ]] && FORCE_LTO=true
 # other env vars to control build: NO_ENC, BITCODE, WINPHONE, VC_BUILD, FORCE_LTO (bool)
 
@@ -104,7 +105,7 @@ echo "FFmpeg/Libav version: $FFMAJOR.$FFMINOR  git: $FFGIT. patch set version: $
 USE_VK=$FFGIT
 USE_VAAPI_WIN32=$FFGIT
 if $FFGIT || [ ${FFMAJOR} -gt 3 ]; then
-  for p in $(find "$THIS_DIR/patches-$PATCH_BRANCH" -name "*.patch" |sort); do
+  for p in $(find "$THIS_DIR/patches/$PATCH_BRANCH" -name "*.patch" |sort); do
       echo $p
     patch -p1 -N < $p
   done
@@ -225,9 +226,11 @@ enable_opt hwaccels
 $USE_VK || disable_opt vulkan
 
 add_elf_flags() {
+  HARDENED_CFLAGS="-fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fPIE" # toolchain=hardened is -fstack-protector-all
+  HARDENED_LDFLAGS="-Wl,-z,relro -Wl,-z,now"
   # -Wl,-z,noexecstack -Wl,--as-needed is added by configure
-  EXTRA_CFLAGS+=" -Wa,--noexecstack -fdata-sections -ffunction-sections -fstack-protector-strong" # TODO: check -fstack-protector-strong
-  EXTRA_LDFLAGS+=" -Wl,--gc-sections" # -Wl,-z,relro -Wl,-z,now
+  EXTRA_CFLAGS+=" -Wa,--noexecstack -fdata-sections -ffunction-sections $HARDENED_CFLAGS"
+  EXTRA_LDFLAGS+=" -Wl,--gc-sections $HARDENED_LDFLAGS"
   # rpath
 }
 
@@ -588,7 +591,7 @@ export LIB="$VC_LTL_LIB;$VCDIR_LIB;$WindowsSdkDir/Lib/$WindowsSDKVersion/ucrt/${
 export AR=$LLVM_AR
 export NM=$LLVM_NM
 #export V=1 # FFmpeg BUG: AR is overriden in common.mak and becomes an invalid command in makedef(@printf works in makefiles but not sh scripts)
-export PKG_CONFIG_PATH=${THIS_DIR}/tools/dep/windows-desktop/lib/pkgconfig:${THIS_DIR}/tools/dep_gpl/windows-desktop/lib/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH=${THIS_DIR}/tools/dep/windows-desktop/${MACHINE/86_/}/lib/pkgconfig:${THIS_DIR}/tools/dep_gpl/windows-desktop/${MACHINE/86_/}/lib/pkgconfig:${THIS_DIR}/tools/dep/windows-desktop/lib/pkgconfig:${THIS_DIR}/tools/dep_gpl/windows-desktop/lib/pkgconfig:$PKG_CONFIG_PATH
 EOF
 # [ expr1 ] && ... at end returns error if expr1 is false
 }
@@ -874,7 +877,7 @@ setup_android_env() {
   local CROSS_PREFIX=${ANDROID_TOOLCHAIN_PREFIX}-
   local FFARCH=$ANDROID_ARCH
   local API_LEVEL=${2#android}
-  local NDK_VER=`grep Revision $NDK_ROOT/source.properties |cut -d ' ' -f 3 |cut -d '.' -f 1`
+  local NDK_VER=`grep Pkg.Revision $NDK_ROOT/source.properties |cut -d ' ' -f 3 |cut -d '.' -f 1`
   [ -z "$API_LEVEL" ] && {
     API_LEVEL=14
     [ $NDK_VER -gt 17 ] && API_LEVEL=16
@@ -886,7 +889,6 @@ setup_android_env() {
   add_elf_flags
   EXTRA_CFLAGS+=" -ffast-math -fstrict-aliasing"
 # -no-canonical-prefixes: results in "-mcpu= ", why?
-  EXTRA_LDFLAGS+=" -Wl,-z,relro -Wl,-z,now"
   TRY_FIX_CORTEX_A8=false
   # TODO: clang lto in r14 (gcc?) except aarch64
   if [ -z "${ANDROID_ARCH/*86/}" ]; then
@@ -1020,6 +1022,7 @@ use armv6t2 or -mthumb-interwork: https://gcc.gnu.org/onlinedocs/gcc-4.5.3/gcc/A
       fi
     fi
   fi
+  [ -z "${ANDROID_ARCH/*64/}" ] && EXTRA_LDFLAGS+=" -Wl,-z,max-page-size=16384" # 16KB page size required by android 15
   #test -d $ANDROID_GCC_DIR || $NDK_ROOT/build/tools/make-standalone-toolchain.sh --platform=android-$API_LEVEL --toolchain=$TOOLCHAIN --install-dir=$ANDROID_GCC_DIR #--system=linux-x86_64
   TOOLCHAIN_OPT+=" --extra-ldexeflags=\"-Wl,--gc-sections -Wl,-z,nocopyreloc -pie -fPIE $EXE_FLAGS\""
   INSTALL_DIR=sdk-android-${1:-${ANDROID_ARCH}}
@@ -1186,6 +1189,7 @@ setup_apple_env() {
   : ${os_ver:=$os_min}
   TOOLCHAIN_OPT+=" --enable-cross-compile $ASM_OPT --arch=$OS_ARCH --target-os=darwin --cc=clang --sysroot=\$(xcrun --sdk $SYSROOT_SDK --show-sdk-path)"
   disable_opt programs
+# apple clang default -fstack-protector, 90KB larger for arm64 lite build. strong is about 5KB larger than default
 # if target_vendor is not apple(-v same except vendor): d: building for 'tvOS-simulator', but linking in object file built for 'tvOS'
   EXTRA_CFLAGS+=" -arch $OS_ARCH --target=apple-${target_os}${os_ver}${env_suffix} $BITCODE_FLAGS $EXTRA_FLAGS" # -fvisibility=hidden -fvisibility-inlines-hidden"
   EXTRA_LDFLAGS+=" -arch $OS_ARCH --target=apple-${target_os}${os_ver}${env_suffix} $BITCODE_LFLAGS $EXTRA_FLAGS -Wl,-dead_strip" # -fvisibility=hidden -fvisibility-inlines-hidden"
@@ -1342,7 +1346,7 @@ setup_gnu_env(){
   add_elf_flags
   local gnu_cc=gcc
   local ARCH=${1:0:5}
-  TOOLCHAIN_OPT+=" --toolchain=hardened"
+  #TOOLCHAIN_OPT+=" --toolchain=hardened"
   $IS_CROSS_BUILD && {
     IS_CROSS_BUILD=true
     echo "gnu cross build"
@@ -1446,7 +1450,7 @@ EOF
     return 0
   fi
 
-  TOOLCHAIN_OPT+=" --toolchain=hardened"
+  #TOOLCHAIN_OPT+=" --toolchain=hardened"
   [ -n "${ARCH/*64/}" ] && BIT=32
   [ $BIT -ne $CC_BIT ] && {
     EXTRA_CFLAGS="-m$BIT $EXTRA_CFLAGS"
@@ -1551,6 +1555,9 @@ config1(){
     } || {
       echo "lto is disabled when build static libs to get better compatibility"
     }
+  fi
+  if $LITE_BUILD; then
+    disable_opt iamf
   fi
   $enable_pic && TOOLCHAIN_OPT+=" --enable-pic"
   EXTRA_CFLAGS=$(trim2 $EXTRA_CFLAGS)
@@ -1684,6 +1691,8 @@ EOF
     exit 2
   }
   $THIS_DIR/tools/mklibffmpeg.sh $PWD $THIS_DIR/$INSTALL_DIR || exit 3
+# env -i for github windows ci: find: The environment is too large for exec()
+  env -i PATH=/usr/bin find . -name "*.pdb" -exec cp -avf {} $THIS_DIR/$INSTALL_DIR/bin \;
   cd $THIS_DIR/$INSTALL_DIR
   echo "https://github.com/wang-bin/avbuild" > README.txt
   cp -af "$FFSRC/Changelog" .
@@ -1692,7 +1701,8 @@ EOF
   if [ -f bin/avutil.lib ]; then
     mv bin/*.lib lib
   fi
-  find lib -name "*.dylib" -type f -exec strip -u -r {} \;
+  find lib -name "*.dylib" -type f -exec dsymutil {} \;
+  find lib -name "*.dylib" -type f -exec strip -u -r {} \; # will strip exported symbols, llvm-strip can reduce size more
 }
 
 build_all(){
@@ -1707,6 +1717,7 @@ build_all(){
       echo ">>>>>no arch is set. setting default archs..."
       [[ "$os" == ios* || "$os" == tvos* || "$os" == watch* || "$os" == xr* || "$os" == vision* ]] && {
         echo $os | grep simulator >/dev/null && archs=(arm64 x86_64) || archs=(arm64)
+        [[ "$os" == xr* || "$os" == vision* ]] && archs=(arm64) # no x86 simulator
       }
       [ "${os:0:7}" == "android" ] && archs=(armv7 arm64 x86 x86_64)
       [ "${os:0:3}" == "rpi" -o "${os:0:9}" == "raspberry" ] && archs=(armv6zk armv7-a)
@@ -1788,7 +1799,7 @@ make_universal()
   [ -z "$dirs" ] && return 0
   if [[ "$os" == ios* || "$os" == macos* || "$os" == osx* || "$os" == *catalyst* || "$os" == tv* || "$os" == xr* || "$os" == vision* || "$os" == watch* ]]; then
     chmod +x $THIS_DIR/tools/dylib2framework.sh
-    cp -avf $THIS_DIR/tools/dylib2framework.sh ${dirs[0]}
+    cp -avf $THIS_DIR/tools/{dylib2framework.sh,PrivacyInfo.xcprivacy} ${dirs[0]}
   fi
   [ ${#dirs[@]} -le 1 ] && return 0
 # TODO: move to a new script

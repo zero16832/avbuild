@@ -10,7 +10,7 @@ env:
 #  GITHUB_ENV: https://docs.github.com/en/actions/learn-github-actions/environment-variables#about-environment-variables
   FF_VERSION: ${{ vars.FF_VER }} # TODO: latest release if triggered by schedule
   LLVM_VER: ${{ vars.LLVM_VER }}
-  LLVM_VER_DEFAULT: 18
+  LLVM_VER_DEFAULT: 19
   NINJA_STATUS: '[%f/%t %e %r]'
   SF_PW_MAPPED: ${{ secrets.SF_PW }}
   SF_USER_MAPPED: ${{ secrets.SF_USER }}
@@ -18,7 +18,7 @@ env:
 jobs:
   Apple:
     # See: https://docs.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#configuring-a-build-matrix
-    runs-on: macos-14
+    runs-on: macos-latest
     env:
       TARGET_OS: ${{ matrix.target }}
       CONFIG_SUFFIX: -gpl-${{ matrix.config }}
@@ -33,9 +33,9 @@ jobs:
           - config: default
             target: macCatalyst
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup Xcode
-      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app
     - name: Create Build Environment
       shell: bash
       env:
@@ -85,7 +85,7 @@ jobs:
         config: [lite]
         target: [windows-desktop]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: Create Build Environment
@@ -154,7 +154,7 @@ jobs:
         config: [lite]
         target: [windows-desktop]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: 'Restore sysroot cache'
@@ -183,11 +183,12 @@ jobs:
         export FFSRC=$PWD/ffmpeg-${FF_VERSION}
         export WindowsSdkDir=${WINDOWSSDKDIR}
         export WindowsSDKVersion=$(cat ${WINDOWSSDKDIR}/.version)
-        USE_TOOLCHAIN=clang-${LLVM_VER:-$LLVM_VER_DEFAULT} ./avbuild.sh $TARGET_OS x64
+        USE_TOOLCHAIN=clang-${LLVM_VER:-$LLVM_VER_DEFAULT} ./avbuild.sh $TARGET_OS "x64 arm64"
     - name: Make SDK
       shell: bash
       run: |
-        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}/lib/* sdk-*/lib/
+        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}/lib/* sdk-*/lib/x64
+        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}/arm64/lib/* sdk-*/lib/arm64
         ./tools/ci-after-build.sh
     - name: Archieve SDK
       uses: actions/upload-artifact@v4
@@ -209,7 +210,7 @@ jobs:
       matrix:
         config: [lite]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
     - name: 'Restore sysroot cache'
@@ -234,11 +235,12 @@ jobs:
       run: |
         export FFSRC=$PWD/ffmpeg-${FF_VERSION}
         export SYSROOT=/tmp/sysroot
-        USE_TOOLCHAIN=clang-${LLVM_VER:-$LLVM_VER_DEFAULT} ./avbuild.sh linux "amd64"
+        USE_TOOLCHAIN=clang-${LLVM_VER:-$LLVM_VER_DEFAULT} ./avbuild.sh linux "amd64 arm64"
     - name: Make SDK
       shell: bash
       run: |
-        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}_amd64/lib/* sdk-*/lib/
+        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}_amd64/lib/* sdk-*/lib/amd64
+        cp -avf tools/dep_gpl/${{ env.TARGET_OS }}_arm64/lib/* sdk-*/lib/arm64
         ./tools/ci-after-build.sh
     - name: Archieve SDK
       uses: actions/upload-artifact@v4
@@ -247,7 +249,7 @@ jobs:
         path: ffmpeg-*.tar.xz
 
   Android:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     env:
       TARGET_OS: android
       CONFIG_SUFFIX: -gpl-${{ matrix.config }}
@@ -256,7 +258,7 @@ jobs:
       matrix:
         config: [lite]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: 'Restore sysroot cache'
       id: sysroot-cache
       uses: actions/cache@v4
